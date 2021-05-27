@@ -1,0 +1,63 @@
+// input 0 : scatter points
+// input 1 : Geometry
+// Nomal in prims is needed ( geometry input 1 )
+// Nomal in points is needed ( points input 0 )
+int npts = npoints(0); 
+float angle;
+float angle_min = chf("angle_min"); // for ex : 10
+float angle_max = chf("angle_max"); // for ex : 100 
+vector xpos,zpos,cpos;
+int step = chi("step"); // rqeust : 5000
+float distance;
+vector pos[],re_pos[];
+int prim[],re_prim[];
+vector uvw[];
+float tol = 0.01;
+float ttol = 0.01;
+float peak = chf("peak");
+for(int i = 0; i < npts; i++){            
+    vector npos;   
+    vector N = point(0,"N",i); // a    
+    N *= 10;
+    vector mpos = point(0,"P",i); 
+    vector re_N = N * -1;
+    intersect_all(1,mpos,N,pos,prim,uvw,tol,ttol);
+    intersect_all(1,mpos,re_N,re_pos,re_prim,uvw,tol,ttol);
+    int len0,len1;
+    len0 = len(prim);
+    len1 = len(re_prim);
+    if ( (len0 > 0) || (len1 > 0) ){
+        int primpoints[];
+        if (len0 > len1){
+            primpoints = primpoints(1,prim[0]);
+            npos = point(1,"P",primpoints[0]);
+        }
+        else if ( len0 < len1 ){
+            primpoints = primpoints(1,re_prim[0]);  
+            npos = point(1,"P",primpoints[0]);
+        
+        }
+        vector spos = normalize(npos-mpos); // b    
+        angle = degrees(acos(dot(normalize(N),normalize(spos))));     
+        distance = 0;       
+        xpos = mpos;                             
+        if( (angle >= 90) && (angle < angle_max) ) {        
+            while( distance <= peak ){                    
+                xpos += ( N / step );    // Change to -= if you want all points move on bot Geometry        
+                zpos = xpos - npos;                      
+                distance = distance(mpos,xpos);                    
+            }
+            setpointattrib(0,"P",i,xpos,"set");        
+               
+        }    
+        else if ( (angle < 90) && (angle > angle_min) ){    
+            while( distance <= peak ){        
+                xpos -= ( N / step );  // Change to += if you want all points move on top Geometry         
+                zpos = xpos - npos;                      
+                distance = distance(mpos,xpos);                                    
+            }       
+            setpointattrib(0,"P",i,xpos,"set");    
+  
+        }
+     }
+}
